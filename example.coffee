@@ -16,4 +16,10 @@ log.debug "world"
 loglib.setLevel "ERROR"
 log.trace "hello"
 
+loglib.addAppender
+    log : (caller, level, message) ->
+        console.log "#{caller} #{level} #{message}"
+    level : 1
 
+#write twice to the console
+log.fatal "oh hai"
