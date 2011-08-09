@@ -46,4 +46,4 @@ There is a global log level, default to ALL, that can be changed by:
 The appenders have to own two attributes.
 The function log, take three arguments (caller, level, message) and the level attribute expressed as number.
 
-
+See example.coffee.
