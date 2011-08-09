@@ -7,6 +7,10 @@ Create a logger:
     loglib = require './logger'
     log = loglib.getLogger __filename
 
+or simply:
+
+    log = (require './logger').getLogger __filename
+
 Output to console:
     
     loglib.addAppender loglib.getConsoleAppender "ALL"
