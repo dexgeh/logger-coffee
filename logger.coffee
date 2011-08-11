@@ -1,5 +1,6 @@
 events = require 'events'
 fs = require 'fs'
+path = require 'path'
 
 exports.levels = levels =
     'ALL'  :  1
@@ -87,7 +88,45 @@ exports.getFileAppender = (filename, level) ->
         formatter : exports.simpleFormatter
         log : (caller, level, message) ->
             fs.open filename, 'a', '0666', (err, id) ->
-                fs.write id, (fileApp.formatter caller, level, message+'\n'), null, 'utf8', () ->
+                fs.write id, (@formatter caller, level, message+'\n'), null, 'utf8', () ->
                     fs.close id
         level : lvl
+    return fileApp
 
+exports.getRollingFileAppender = (filename, maxSize, backups, level) ->
+    throw new Error "Unknown level #{level}" if not levels[level]
+    throw new Error "Backups have to be a positive number" if not backups > 0 and typeof backups isnt Number
+    maxSizeBytes = parseInt ""+maxSize
+    if isNaN maxSizeBytes
+        maxSizeBytes = parseInt(maxSize.substring(0, maxSize.length-1))
+        chr = maxSize.substring(maxSize.length-1).toUpperCase()
+        if isNaN maxSizeBytes
+            throw new Error "max size have to be a positive number (bytes) suffixed by M or K (megabytes or kilobytes)"
+        maxSizeBytes = maxSizeBytes * 1024 if chr is "K"
+        maxSizeBytes = maxSizeBytes * 1024 * 1024 if chr is "M"
+        if maxSize
+            throw new Error "max size have to be a positive number (bytes) suffixed by M or K (megabytes or kilobytes)"
+    currentBackupIndex = 0
+    currentFileSize = 0
+    if path.existsSync filename
+        currentFileSize = (fs.statSync filename).size
+    rollingFileApp =
+        formatter : exports.simpleFormatter
+        log : (caller, level, message) ->
+            @rollFile() if @currentFileSize > maxSizeBytes
+            @appendLog caller, level, message
+        rollFile : () ->
+            @currentBackupIndex = @currentBackupIndex+1
+            @currentBackupIndex = 1 if @currentBackupIndex > backups
+            fs.renameSync filename, filename+"."+@currentBackupIndex
+            @currentFileSize = 0
+        appendLog : (caller, level, message) ->
+            fs.open filename, 'a', '0666', (err, id) ->
+                line = exports.simpleFormatter caller, level, message+'\n'
+                fs.write id, line, null, 'utf8', () ->
+                    fs.closeSync id
+                    rollingFileApp.currentFileSize += line.length
+        currentBackupIndex : currentBackupIndex
+        currentFileSize : currentFileSize
+        level : levels[level]
+    return rollingFileApp
