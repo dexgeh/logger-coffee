@@ -19,6 +19,10 @@ Output to file:
 
     loglib.addAppender loglib.getFileAppender "filename.log", "ALL"
 
+or
+
+    loglib.addAppender loglib.getRollingFileAppender "filename.log", "2M", "5", "ALL"
+
 Use the logger:
 
     log.trace "hello"
@@ -47,7 +51,6 @@ There is a global log level, default to ALL, that can be changed by:
 
     loglib.setLevel "DEBUG"
 
-The appenders have to own two attributes.
-The function log, take three arguments (caller, level, message) and the level attribute expressed as number.
+The appenders have to own two attributes: the function named "log", take three arguments (caller, level, message) and the "level" attribute expressed as number.
 
 See example.coffee.

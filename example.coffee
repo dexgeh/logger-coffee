@@ -7,7 +7,7 @@ log = loglib.getLogger __filename
 #no appender specified, this line has no effect
 log.debug "hello"
 
-#print world
+#print world - with colors!
 loglib.addAppender loglib.getConsoleAppender("DEBUG")
 log.trace "hello"
 log.debug "world"
@@ -16,6 +16,7 @@ log.debug "world"
 loglib.setLevel "ERROR"
 log.trace "hello"
 
+#define a custom appender
 loglib.addAppender
     log : (caller, level, message) ->
         console.log "#{caller} #{level} #{message}"
@@ -23,3 +24,9 @@ loglib.addAppender
 
 #write twice to the console
 log.fatal "oh hai"
+
+#log to a file, limit the file size to 2M, keep two backups
+loglib.addAppender loglib.getRollingFileAppender("output.log", "2M", "2", "ALL")
+
+#write to file
+log.fatal "last"
