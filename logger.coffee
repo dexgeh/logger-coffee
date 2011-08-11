@@ -53,6 +53,20 @@ levelPad =
 exports.simpleFormatter = (caller, level, message) ->
     "[#{new Date().toUTCString()} #{levelPad[level]}] #{caller.substring(process.env.PWD.length+1)} #{message}"
 
+
+levelColors =
+    'TRACE' : ['\033[1m', '\033[22m'] #bold
+    'DEBUG' : ['\033[33m', '\033[39m'] #yellow
+    'INFO'  : ['\033[32m','\033[39m'] #green
+    'ERROR' : ['\033[31m', '\033[39m'] #red
+    'FATAL' : ['\033[35m', '\033[39m'] #magenta
+
+exports.getConsoleColorFormatter = (caller, level, message) ->
+    timeColor = "\033[1m"+new Date().toUTCString()+"\033[22m"
+    levelColor = levelColors[level][0] + level + levelColors[level][1]
+    callerColor = "\033[36m"+(caller.substring process.env.PWD.length+1)+"\033[39m"
+    "[#{timeColor} #{levelColor}] #{callerColor} #{message}"
+
 exports.addAppender = (appender) ->
     dispatcher.appenders.push appender
 
@@ -60,7 +74,7 @@ exports.getConsoleAppender = (level) ->
     throw new Error("Unknown level #{level}") if not levels[level]
     lvl = levels[level]
     consoleApp =
-        formatter : exports.simpleFormatter
+        formatter : exports.getConsoleColorFormatter
         log : (caller, level, message) ->
             console.log (@formatter caller, level, message)
         level : lvl
@@ -76,3 +90,4 @@ exports.getFileAppender = (filename, level) ->
                 fs.write id, (fileApp.formatter caller, level, message+'\n'), null, 'utf8', () ->
                     fs.close id
         level : lvl
+
