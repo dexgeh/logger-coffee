@@ -64,7 +64,7 @@ levelColors =
 
 exports.getConsoleColorFormatter = (caller, level, message) ->
     timeColor = "\033[1m"+new Date().toUTCString()+"\033[22m"
-    levelColor = levelColors[level][0] + level + levelColors[level][1]
+    levelColor = levelColors[level][0] + levelPad[level] + levelColors[level][1]
     callerColor = "\033[36m"+(caller.substring process.env.PWD.length+1)+"\033[39m"
     "[#{timeColor} #{levelColor}] #{callerColor} #{message}"
 
