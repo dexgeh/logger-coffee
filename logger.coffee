@@ -96,16 +96,11 @@ exports.getFileAppender = (filename, level) ->
 exports.getRollingFileAppender = (filename, maxSize, backups, level) ->
     throw new Error "Unknown level #{level}" if not levels[level]
     throw new Error "Backups have to be a positive number" if not backups > 0 and typeof backups isnt Number
+    throw new Error "max size have to be a positive number (bytes) suffixed by M or K (megabytes or kilobytes)" if not maxSize.match /[0-9]+[MmKk]?/
     maxSizeBytes = parseInt ""+maxSize
-    if isNaN maxSizeBytes
-        maxSizeBytes = parseInt(maxSize.substring(0, maxSize.length-1))
-        chr = maxSize.substring(maxSize.length-1).toUpperCase()
-        if isNaN maxSizeBytes
-            throw new Error "max size have to be a positive number (bytes) suffixed by M or K (megabytes or kilobytes)"
-        maxSizeBytes = maxSizeBytes * 1024 if chr is "K"
-        maxSizeBytes = maxSizeBytes * 1024 * 1024 if chr is "M"
-        if maxSize
-            throw new Error "max size have to be a positive number (bytes) suffixed by M or K (megabytes or kilobytes)"
+    chr = maxSize.substring(maxSize.length-1).toUpperCase()
+    maxSizeBytes = maxSizeBytes * 1024 if chr is "K"
+    maxSizeBytes = maxSizeBytes * 1024 * 1024 if chr is "M"
     currentBackupIndex = 0
     currentFileSize = 0
     if path.existsSync filename
