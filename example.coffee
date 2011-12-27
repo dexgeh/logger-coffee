@@ -18,8 +18,8 @@ log.trace "hello"
 
 #define a custom appender
 loglib.addAppender
-    log : (caller, level, message) ->
-        console.log "#{caller} #{level} #{message}"
+    log : (instant, caller, level, message) ->
+        console.log "#{instant} #{caller} #{level} #{message}"
     level : 1
 
 #write twice to the console

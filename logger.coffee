@@ -3,7 +3,7 @@ fs = require 'fs'
 path = require 'path'
 
 exports.levels = levels =
-    'ALL'  :  1
+    'ALL'   : 1
     'TRACE' : 2
     'DEBUG' : 3
     'INFO'  : 4
@@ -13,12 +13,12 @@ exports.levels = levels =
     'OFF'   : 8
 
 dispatcher = new events.EventEmitter()
-dispatcher.on  'log', (caller, level, message) ->
+dispatcher.on  'log', (instant, caller, level, message) ->
     for appender in @appenders
-        appender.log caller, level, message if levels[level] >= appender.level
+        appender.log instant, caller, level, message if levels[level] >= appender.level
 
-dispatcher.log = (caller, level, message) ->
-    @emit 'log', caller, level, message if levels[level] and levels[level] >= @globalLevel
+dispatcher.log = (instant, caller, level, message) ->
+    @emit 'log', instant, caller, level, message if levels[level] and levels[level] >= @globalLevel
 
 dispatcher.globalLevel = 1
 dispatcher.appenders = []
@@ -29,19 +29,19 @@ exports.setLevel = (level) ->
 
 exports.getLogger = (caller) ->
     log : (message, level) ->
-        dispatcher.log caller,  level , message
+        dispatcher.log new Date(), caller,  level , message
     trace : (message) ->
-        dispatcher.log caller, 'TRACE', message
+        dispatcher.log new Date(), caller, 'TRACE', message
     debug : (message) ->
-        dispatcher.log caller, 'DEBUG', message
+        dispatcher.log new Date(), caller, 'DEBUG', message
     info  : (message) ->
-        dispatcher.log caller, 'INFO' , message
+        dispatcher.log new Date(), caller, 'INFO' , message
     warn  : (message) ->
-        dispatcher.log caller, 'WARN' , message
+        dispatcher.log new Date(), caller, 'WARN' , message
     error : (message) ->
-        dispatcher.log caller, 'ERROR', message
+        dispatcher.log new Date(), caller, 'ERROR', message
     fatal : (message) ->
-        dispatcher.log caller, 'FATAL', message
+        dispatcher.log new Date(), caller, 'FATAL', message
 
 levelPad =
     'TRACE' : 'TRACE'
@@ -51,8 +51,8 @@ levelPad =
     'ERROR' : 'ERROR'
     'FATAL' : 'FATAL'
 
-exports.simpleFormatter = (caller, level, message) ->
-    "[#{new Date().toUTCString()} #{levelPad[level]}] #{caller.substring(process.env.PWD.length+1)} #{message}"
+exports.simpleFormatter = (instant, caller, level, message) ->
+    "[#{instant.toUTCString()} #{levelPad[level]}] #{caller.substring(process.env.PWD.length+1)} #{message}"
 
 
 levelColors =
@@ -62,8 +62,8 @@ levelColors =
     'ERROR' : ['\033[31m', '\033[39m'] #red
     'FATAL' : ['\033[35m', '\033[39m'] #magenta
 
-exports.getConsoleColorFormatter = (caller, level, message) ->
-    timeColor = "\033[1m"+new Date().toUTCString()+"\033[22m"
+exports.getConsoleColorFormatter = (instant, caller, level, message) ->
+    timeColor = "\033[1m"+instant.toUTCString()+"\033[22m"
     levelColor = levelColors[level][0] + levelPad[level] + levelColors[level][1]
     callerColor = "\033[36m"+(caller.substring process.env.PWD.length+1)+"\033[39m"
     "[#{timeColor} #{levelColor}] #{callerColor} #{message}"
@@ -76,8 +76,8 @@ exports.getConsoleAppender = (level) ->
     lvl = levels[level]
     consoleApp =
         formatter : exports.getConsoleColorFormatter
-        log : (caller, level, message) ->
-            console.log (@formatter caller, level, message)
+        log : (instant, caller, level, message) ->
+            console.log (@formatter instant, caller, level, message)
         level : lvl
     return consoleApp
 
@@ -86,9 +86,9 @@ exports.getFileAppender = (filename, level) ->
     lvl = levels[level]
     fileApp =
         formatter : exports.simpleFormatter
-        log : (caller, level, message) ->
+        log : (instant, caller, level, message) ->
             fs.open filename, 'a', '0666', (err, id) ->
-                fs.write id, (@formatter caller, level, message+'\n'), null, 'utf8', () ->
+                fs.write id, (@formatter instant, caller, level, message+'\n'), null, 'utf8', () ->
                     fs.close id
         level : lvl
     return fileApp
@@ -107,17 +107,17 @@ exports.getRollingFileAppender = (filename, maxSize, backups, level) ->
         currentFileSize = (fs.statSync filename).size
     rollingFileApp =
         formatter : exports.simpleFormatter
-        log : (caller, level, message) ->
+        log : (instant, caller, level, message) ->
             @rollFile() if @currentFileSize > maxSizeBytes
-            @appendLog caller, level, message
+            @appendLog instant, caller, level, message
         rollFile : () ->
             @currentBackupIndex = @currentBackupIndex+1
             @currentBackupIndex = 1 if @currentBackupIndex > backups
             fs.renameSync filename, filename+"."+@currentBackupIndex
             @currentFileSize = 0
-        appendLog : (caller, level, message) ->
+        appendLog : (instant, caller, level, message) ->
             fs.open filename, 'a', '0666', (err, id) ->
-                line = exports.simpleFormatter caller, level, message+'\n'
+                line = exports.simpleFormatter instant, caller, level, message+'\n'
                 fs.write id, line, null, 'utf8', () ->
                     fs.closeSync id
                     rollingFileApp.currentFileSize += line.length
